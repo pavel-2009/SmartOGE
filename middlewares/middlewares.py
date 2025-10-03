@@ -12,3 +12,13 @@ class AdminStatsMiddleware(BaseMiddleware):
                 db.increment_admin_stat(chat_id=user_id, stat_field="commands_used", increment=1)
         return await handler(event, data)
     
+class IsAdminMiddleware(BaseMiddleware):
+    async def __call__(self, handler, event, data):
+        message = event
+        if message and message.from_user:
+            user_id = message.from_user.id
+            if not IsAdmin.is_admin(user_id):
+                await message.answer("У вас нет прав для выполнения этой команды.")
+                return
+        return await handler(event, data)
+    

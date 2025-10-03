@@ -3,6 +3,10 @@ import json
 import ast
 import asyncio
 from aiogram import types
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 
 def generate_quiz(subject: str, level: str) -> list:
@@ -12,7 +16,7 @@ def generate_quiz(subject: str, level: str) -> list:
             response = requests.post(
                 url="https://openrouter.ai/api/v1/chat/completions",
                 headers={
-                    "Authorization": "Bearer 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",
+                    "Authorization": f"{os.getenv('OPENROUTER_API_KEY')}",
                     "Content-Type": "application/json",
                 },
                 data=json.dumps({

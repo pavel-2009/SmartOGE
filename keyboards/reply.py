@@ -15,3 +15,24 @@ start_keyboard = ReplyKeyboardMarkup(keyboard=[
     KeyboardButton(text='📈 Моя статистика')],
     [KeyboardButton(text='🏆 Рейтинг'), KeyboardButton(text='❓ Помощь')]
 ], resize_keyboard=True)
+
+
+settings_markup = ReplyKeyboardMarkup(
+        keyboard=[  
+            [KeyboardButton(text='1. Управление пользователями')],
+            [KeyboardButton(text='2. Настройки викторины')],
+            [KeyboardButton(text='3. Настройки уведомлений')],
+            [KeyboardButton(text='🔙 Назад')]
+        ],
+        resize_keyboard=True
+    )
+
+admin_buttons = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text='📊 Статистика пользователей')],
+            [KeyboardButton(text='🏆 Рейтинг')],
+            [KeyboardButton(text='❓ Помощь')],
+            [KeyboardButton(text='⚙️ Настройки')]
+        ],
+        resize_keyboard=True
+    )

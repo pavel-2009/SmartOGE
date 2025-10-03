@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 
 import logging
 
-from main import dp, bot
+from ..bot import dp, bot
 
 @dp.errors_handler()
 async def global_error_handler(update: types.Update, exception: Exception, state: FSMContext) -> bool:

@@ -1,13 +1,12 @@
-from aiogram import F, Router
+from aiogram import F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
-from aiogram.filters import Command, BaseFilter
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
 from bot_handlers.admin.start import IsAdmin
 from bot_handlers.admin.start import admin_router
 from database import db
-from keyboards.reply import SUBJECTS
+from keyboards.reply import SUBJECTS, settings_markup, admin_buttons
 
 
 class NewSubjectState(StatesGroup):
@@ -19,7 +18,7 @@ class DeleteSubjectState(StatesGroup):
     subject = State()
 
 
-@admin_router.message(IsAdmin())
+
 @admin_router.message(F.text == '⚙️ Настройки')
 async def admin_settings(message: Message) -> None:
     """Provide settings options for admin users."""
@@ -29,34 +28,18 @@ async def admin_settings(message: Message) -> None:
 2. Настройки викторины
 3. Настройки уведомлений
 4. Настройки безопасности."""
-    markup = ReplyKeyboardMarkup(
-        keyboard=[  
-            [KeyboardButton(text='1. Управление пользователями')],
-            [KeyboardButton(text='2. Настройки викторины')],
-            [KeyboardButton(text='3. Настройки уведомлений')],
-            [KeyboardButton(text='🔙 Назад')]
-        ],
-        resize_keyboard=True
-    )
-    await message.answer(text, reply_markup=markup)
+    
+    await message.answer(text, reply_markup=settings_markup)
 
 
-@admin_router.message(IsAdmin())
+
 @admin_router.message(F.text == '🔙 Назад')
 async def back_to_admin_menu(message: Message) -> None:
     """Return to the main admin menu."""
-    await message.answer('Вы вернулись в главное меню администратора.', reply_markup=ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text='📊 Статистика пользователей')],
-            [KeyboardButton(text='🏆 Рейтинг')],
-            [KeyboardButton(text='❓ Помощь')],
-            [KeyboardButton(text='⚙️ Настройки')]
-        ],
-        resize_keyboard=True
-    ))
+    await message.answer('Вы вернулись в главное меню администратора.', reply_markup=admin_buttons)
 
 
-@admin_router.message(IsAdmin())
+
 @admin_router.message(F.text == '1. Управление пользователями')
 async def handle_settings_1(message: Message) -> None:
     """Handle user management settings."""
@@ -72,7 +55,7 @@ async def handle_settings_1(message: Message) -> None:
     await message.answer(f"Список всех пользователей:\n{user_list}", reply_markup=markup)
 
 
-@admin_router.message(IsAdmin())
+
 @admin_router.message(F.text == 'Удалить пользователя')
 async def delete_user_prompt(message: Message) -> None:
     """Prompt admin to enter user ID to delete."""
@@ -96,7 +79,7 @@ async def process_delete_user(message: Message) -> None:
         await message.answer(f"Произошла ошибка при удалении пользователя: {e}")
 
 
-@admin_router.message(IsAdmin())
+
 @admin_router.message(F.text == '2. Настройки викторины')
 async def handle_settings_2(message: Message) -> None:
     """Handle quiz settings."""
@@ -111,7 +94,7 @@ async def handle_settings_2(message: Message) -> None:
     await message.answer(text, reply_markup=markup)
 
 
-@admin_router.message(IsAdmin())
+
 @admin_router.message(F.text == '1. Добавить/Удалить предметы')
 async def manage_quiz_subjects(message: Message) -> None:
     """Manage quiz subjects."""
@@ -128,7 +111,7 @@ async def manage_quiz_subjects(message: Message) -> None:
     await message.answer(f"Текущие предметы викторины:\n{subject_list}", reply_markup=markup)
 
 
-@admin_router.message(IsAdmin())
+
 @admin_router.message(F.text == 'Добавить предмет')
 async def add_quiz_subject_prompt(message: Message, state: FSMContext) -> None:
     """Prompt admin to enter a new quiz subject."""
@@ -145,12 +128,11 @@ async def process_add_quiz_subject(message: Message, state: FSMContext) -> None:
         await message.answer("Этот предмет уже существует.")
     else:
         db.add_subject(new_subject)
-        SUBJECTS.append(new_subject)
         await message.answer(f"Предмет '{new_subject}' успешно добавлен.")
     await state.clear()
 
 
-@admin_router.message(IsAdmin())
+
 @admin_router.message(F.text == 'Удалить предмет')
 async def delete_quiz_subject_prompt(message: Message, state: FSMContext) -> None:
     """Prompt admin to enter a quiz subject to delete."""
@@ -158,7 +140,7 @@ async def delete_quiz_subject_prompt(message: Message, state: FSMContext) -> Non
     await state.set_state(DeleteSubjectState.subject)
 
 
-@admin_router.message(IsAdmin())
+
 @admin_router.message(DeleteSubjectState.subject)
 async def process_delete_quiz_subject(message: Message, state: FSMContext) -> None:
     """Process deleting a quiz subject."""
@@ -172,7 +154,7 @@ async def process_delete_quiz_subject(message: Message, state: FSMContext) -> No
     await state.clear()
 
 
-@admin_router.message(IsAdmin())
+
 @admin_router.message(F.text == '3. Настройки уведомлений')
 async def handle_settings_3(message: Message) -> None:
     """Handle notification settings."""

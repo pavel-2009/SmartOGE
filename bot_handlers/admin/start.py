@@ -2,8 +2,11 @@ from aiogram import Router, F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.filters import CommandStart, Command, BaseFilter
 
+from middlewares.middlewares import IsAdminMiddleware
+
 
 admin_router = Router()
+admin_router.message.middleware(IsAdminMiddleware())
 
 
 class IsAdmin(BaseFilter):
@@ -25,7 +28,7 @@ class IsNotAdmin(BaseFilter):
         return not IsAdmin.is_admin(message.from_user.id)
     
 
-@admin_router.message(CommandStart(), IsAdmin())
+@admin_router.message(CommandStart())
 async def admin_start(message: Message) -> None:
     """Handle the /start command for admin users."""
     await message.answer('Вы вошли как администратор.', reply_markup=ReplyKeyboardMarkup(
@@ -39,8 +42,8 @@ async def admin_start(message: Message) -> None:
     ))
 
 
-
-@admin_router.message((F.text == '❓ Помощь') & (IsAdmin() == True) & (Command("help") == True))
+@admin_router.message(Command("help"))
+@admin_router.message(F.text == '❓ Помощь')
 async def admin_help(message: Message) -> None:
     """Provide help information for admin users."""
     help_text = (

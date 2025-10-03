@@ -133,21 +133,37 @@ def create_db() -> None:
 
 
 def update_raiting(chat_id: int, score: int) -> bool | None:
-    """Update the user's rating in the database."""
+    """Update the user's rating in the database (average score)."""
     try:
         existing = connect_to_db(
             "SELECT scores FROM raiting WHERE chat_id = ?",
             (chat_id,),
             fetch=True
         )
+
         if existing:
-            new_score = (existing[0][0] + score) / (len(existing) + 1)
+            inserted = connect_to_db(
+                "INSERT INTO raiting (chat_id, scores) VALUES (?, ?)",
+                (chat_id, score),
+                fetch=False
+            )
+            if not inserted:
+                return False
+
+            avg_result = connect_to_db(
+                "SELECT AVG(scores) FROM raiting WHERE chat_id = ?",
+                (chat_id,),
+                fetch=True
+            )
+            new_score = avg_result[0][0]
+
             return connect_to_db(
                 "UPDATE raiting SET scores = ? WHERE chat_id = ?",
                 (new_score, chat_id),
                 fetch=False
             )
         else:
+            # если первый голос
             return connect_to_db(
                 "INSERT INTO raiting (chat_id, scores) VALUES (?, ?)",
                 (chat_id, score),
