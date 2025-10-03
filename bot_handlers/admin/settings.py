@@ -7,15 +7,7 @@ from bot_handlers.admin.start import IsAdmin
 from bot_handlers.admin.start import admin_router
 from database import db
 from keyboards.reply import SUBJECTS, settings_markup, admin_buttons
-
-
-class NewSubjectState(StatesGroup):
-    """State for adding a new quiz subject."""
-    new_subject = State()
-
-class DeleteSubjectState(StatesGroup):
-    """State for deleting a quiz subject."""
-    subject = State()
+import states.states as states
 
 
 
@@ -116,11 +108,11 @@ async def manage_quiz_subjects(message: Message) -> None:
 async def add_quiz_subject_prompt(message: Message, state: FSMContext) -> None:
     """Prompt admin to enter a new quiz subject."""
     await message.answer("Введите название нового предмета для викторины:")
-    await state.set_state(NewSubjectState.new_subject)
+    await state.set_state(states.NewSubjectState.new_subject)
 
 
 @admin_router.message(IsAdmin())
-@admin_router.message(NewSubjectState.new_subject)
+@admin_router.message(states.NewSubjectState.new_subject)
 async def process_add_quiz_subject(message: Message, state: FSMContext) -> None:
     """Process adding a new quiz subject."""
     new_subject = message.text.strip()
@@ -137,11 +129,11 @@ async def process_add_quiz_subject(message: Message, state: FSMContext) -> None:
 async def delete_quiz_subject_prompt(message: Message, state: FSMContext) -> None:
     """Prompt admin to enter a quiz subject to delete."""
     await message.answer("Введите название предмета, который хотите удалить:")
-    await state.set_state(DeleteSubjectState.subject)
+    await state.set_state(states.DeleteSubjectState.subject)
 
 
 
-@admin_router.message(DeleteSubjectState.subject)
+@admin_router.message(states.DeleteSubjectState.subject)
 async def process_delete_quiz_subject(message: Message, state: FSMContext) -> None:
     """Process deleting a quiz subject."""
     subject_to_delete = message.text.strip()

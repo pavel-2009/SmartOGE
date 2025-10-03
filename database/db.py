@@ -5,6 +5,8 @@ import datetime
 import json
 import logging
 
+logger = logging.getLogger(__name__)
+
 db_path = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), 'db.sqlite3')
 

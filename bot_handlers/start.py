@@ -7,14 +7,11 @@ from aiogram.fsm.context import FSMContext
 import database.db as db
 from keyboards.reply import start_keyboard
 from .admin.start import IsNotAdmin
+import states.states as states
 
 start_router = Router()
 
 
-class Reg(StatesGroup):
-    """States for user registration."""
-    name = State()
-    last_name = State()
 
 
 @start_router.message(CommandStart(), IsNotAdmin())
@@ -32,20 +29,20 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
         await show_start_buttons(message)
     else:
         await message.answer('Пожалуйста, введите ваше имя:')
-        await state.set_state(Reg.name)
+        await state.set_state(states.Reg.name)
 
 
-@start_router.message(Reg.name)
+@start_router.message(states.Reg.name)
 async def process_name(message: Message, state: FSMContext) -> None:
     """Process the user's name."""
     text = message.text.strip()
 
     await state.update_data({'name': text})
     await message.answer('Введите вашу фамилию.')
-    await state.set_state(Reg.last_name)
+    await state.set_state(states.Reg.last_name)
 
 
-@start_router.message(Reg.last_name)
+@start_router.message(states.Reg.last_name)
 async def process_lastname(message: Message, state: FSMContext) -> None:
     """Process the user's last name and complete registration."""
     text = message.text.strip()

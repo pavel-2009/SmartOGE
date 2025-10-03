@@ -1,4 +1,4 @@
-import requests
+import aiohttp
 import json
 import ast
 import asyncio
@@ -9,48 +9,53 @@ import os
 load_dotenv()
 
 
-def generate_quiz(subject: str, level: str) -> list:
-    """Generate a quiz using an AI service."""
+async def generate_quiz(subject: str, level: str) -> list:
+    """Асинхронная генерация викторины через OpenRouter API."""
     for attempt in range(10):
         try:
-            response = requests.post(
-                url="https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"{os.getenv('OPENROUTER_API_KEY')}",
-                    "Content-Type": "application/json",
-                },
-                data=json.dumps({
-                    "model": "mistralai/mixtral-8x7b-instruct",
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": f"""
-                        Сгенерируй 10 экзаменационных вопросов для подготовки к ОГЭ по предмету "{subject}" уровня сложности "{level}".
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url="https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"{os.getenv('OPENROUTER_API_KEY')}",
+                        "Content-Type": "application/json",
+                    },
+                    json={  # лучше использовать json= вместо data=json.dumps()
+                        "model": "mistralai/mixtral-8x7b-instruct",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": f"""
+Сгенерируй 10 экзаменационных вопросов для подготовки к ОГЭ по предмету "{subject}" уровня сложности "{level}".
 
-                        Каждый вопрос — список из 4 элементов:
-                        [
-                        "Вопрос",
-                        {{
-                            "A": "...",
-                            "B": "...",
-                            "C": "...",
-                            "D": "..."
-                        }},
-                        "Правильный вариант (A|B|C|D) (только буква, без ответа)",
-                        "Объяснение"
+Каждый вопрос — список из 4 элементов:
+[
+"Вопрос",
+{{
+    "A": "...",
+    "B": "...",
+    "C": "...",
+    "D": "..."
+}},
+"Правильный вариант (A|B|C|D) (только буква, без ответа)",
+"Объяснение"
 ]
 
 Ответ: только **валидный Python-список из 10 таких списков**. Без заголовков, markdown, LaTeX, пояснений. Всё на русском.
 Объяснение должно быть подробным, как в задачах из Школково. Все математические термины на английском заменять на русские.
 """
-                        }
-                    ]
-                })
-            )
+                            }
+                        ]
+                    }
+                ) as response:
 
-            result = response.json()
+                    if response.status != 200:
+                        print(f"⚠️ Попытка #{attempt+1}: сервер вернул {response.status}")
+                        continue
 
-            content = result['choices'][0]['message']['content'].strip()
+                    result = await response.json()
+
+            content = result["choices"][0]["message"]["content"].strip()
 
             try:
                 quiz_list = ast.literal_eval(content)
@@ -71,7 +76,7 @@ def generate_quiz(subject: str, level: str) -> list:
                     for q in quiz_list
                 )
             ):
-                print(quiz_list)
+                print("✅ Викторина успешно сгенерирована")
                 return quiz_list
             else:
                 print("⚠️ Невалидная структура данных.")
@@ -79,13 +84,9 @@ def generate_quiz(subject: str, level: str) -> list:
 
         except Exception as e:
             print(f"⚠️ Попытка #{attempt + 1} не удалась: {e}")
-            if hasattr(response, "text"):
-                print("Ответ сервера:\n", response.text)
             continue
 
-    raise ValueError(
-        "❌ Не удалось получить валидный список от ИИ после 10 попыток.")
-
+    raise ValueError("❌ Не удалось получить валидный список от ИИ после 10 попыток.")
 
 def answer_isright(answer_num: int, answer: str, quiz: list) -> bool:
     """Check if the provided answer is correct."""

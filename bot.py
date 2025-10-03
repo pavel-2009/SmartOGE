@@ -1,3 +1,11 @@
+import logging
+
+# Централизованная настройка логгирования
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d in %(funcName)s(): %(message)s"
+)
+
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 import asyncio
@@ -13,8 +21,6 @@ from bot_handlers.raiting import raiting_router
 from bot_handlers.admin.start import admin_router
 from bot_handlers.admin.stats import admin_stats_router
 
-
-
 load_dotenv()
 
 
@@ -28,6 +34,8 @@ async def main() -> None:
     dp.include_router(raiting_router)
     dp.include_router(admin_router)
     dp.include_router(admin_stats_router)
+
+    dp.errors.register(lambda *args: logging.error(f"Error: {args}"))
 
     commands = [
         BotCommand(command="start", description="Запуск бота"),

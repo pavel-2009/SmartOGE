@@ -14,11 +14,6 @@ from .admin.start import IsNotAdmin
 
 stats_router = Router()
 
-logging.basicConfig(
-    level=logging.ERROR,
-    format="%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d in %(funcName)s(): %(message)s"
-)
-
 
 @stats_router.message(Command('stats'), IsNotAdmin())
 @stats_router.message(F.text == '📈 Моя статистика')
@@ -68,6 +63,8 @@ async def show_stats(message: Message) -> None:
 
     await message.answer_photo(types.FSInputFile(image_path), caption="Вот твоя статистика 📊")
 
+    os.remove(image_path)
+
 
 def preprocess_stats(stats: dict) -> pd.DataFrame:
     """Preprocess the stats dictionary into a DataFrame with subjects."""
@@ -93,3 +90,4 @@ def preprocess_stats(stats: dict) -> pd.DataFrame:
     df = pd.DataFrame(records)
     df.sort_values(by=["subject", "date"], inplace=True)
     return df
+

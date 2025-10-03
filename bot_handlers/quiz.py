@@ -5,7 +5,6 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 import asyncio
-import logging
 
 from services.utils import generate_quiz, answer_isright
 from bot_handlers.start import show_start_buttons
@@ -14,25 +13,11 @@ from services.utils import show_loading_animation
 from keyboards.inline import levels_inline_markup, continue_markup, return_to_main_markup
 from keyboards.reply import subjects_markup
 from middlewares.middlewares import AdminStatsMiddleware
+import states.states as states
 
 
 
-logging.basicConfig(
-    level=logging.ERROR,
-    format="%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d in %(funcName)s(): %(message)s"
-)
 
-
-class QuizState(StatesGroup):
-    """States for the quiz process."""
-    right_answers = State()
-    current_question = State()
-
-
-class QuizSettingsState(StatesGroup):
-    """States for quiz settings."""
-    subject = State()
-    level = State()
 
 
 quiz_router = Router()
@@ -44,16 +29,16 @@ quiz_router.message.middleware(AdminStatsMiddleware())
 @quiz_router.message(F.text == '📚 Начать викторину')
 async def first_step(message: Message, state: FSMContext) -> None:
     """Start the quiz by asking the user to choose a subject."""
-    await state.set_state(QuizSettingsState.subject)
+    await state.set_state(states.QuizSettingsState.subject)
     await message.answer('Выберите предмет:', reply_markup=subjects_markup)
 
 
-@quiz_router.message(QuizSettingsState.subject)
+@quiz_router.message(states.QuizSettingsState.subject)
 async def choose_subject(message: Message, state: FSMContext) -> None:
     """Handle the subject choice and ask for difficulty level."""
     await message.answer("✅ Предмет выбран!", reply_markup=ReplyKeyboardRemove())
     await state.update_data(subject=message.text)
-    await state.set_state(QuizSettingsState.level)
+    await state.set_state(states.QuizSettingsState.level)
     await message.answer('Выберите уровень сложности:', reply_markup=levels_inline_markup, )
 
 
@@ -117,11 +102,11 @@ async def start_quiz(callback: CallbackQuery, state: FSMContext) -> None:
         ]
     )
 
-    await state.set_state(QuizState.current_question)
+    await state.set_state(states.QuizState.current_question)
     await callback.message.answer(message_question, reply_markup=keyboard_question)
 
 
-@quiz_router.callback_query(F.data.startswith('answer_'), QuizState.current_question)
+@quiz_router.callback_query(F.data.startswith('answer_'), states.QuizState.current_question)
 async def check_answer(callback: CallbackQuery, state: FSMContext) -> None:
     """Check the user's answer and provide feedback."""
     answer_num, answer = callback.data.replace('answer_', '').split(':')
@@ -158,7 +143,7 @@ async def check_answer(callback: CallbackQuery, state: FSMContext) -> None:
 
 
 
-@quiz_router.callback_query(F.data == 'next_qst', QuizState.current_question)
+@quiz_router.callback_query(F.data == 'next_qst', states.QuizState.current_question)
 async def next_question(callback: CallbackQuery, state: FSMContext) -> None:
     """Send the next question or finish the quiz."""
     data = await state.get_data()
@@ -219,6 +204,10 @@ async def finish_quiz(callback: CallbackQuery, state: FSMContext) -> None:
         f"Ваш результат: {right_answers}/10 правильных ответов.",
         reply_markup=return_to_main_markup
     )
+    db.save_stats(callback.message.chat.id, right_answers, subject)
+    db.increment_admin_stat(chat_id=callback.message.chat.id, stat_field="quizzes_taken", increment=1)
+    db.increment_admin_stat(chat_id=callback.message.chat.id, stat_field="total_score", increment=right_answers)
+    await state.clear()
     db.save_stats(callback.message.chat.id, right_answers, subject)
     db.increment_admin_stat(chat_id=callback.message.chat.id, stat_field="quizzes_taken", increment=1)
     db.increment_admin_stat(chat_id=callback.message.chat.id, stat_field="total_score", increment=right_answers)
