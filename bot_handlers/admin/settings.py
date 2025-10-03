@@ -1,13 +1,12 @@
 from aiogram import F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
-from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
-from bot_handlers.admin.start import IsAdmin
-from bot_handlers.admin.start import admin_router
+from .start import admin_router
 from database import db
 from keyboards.reply import SUBJECTS, settings_markup, admin_buttons
 import states.states as states
+
 
 
 
@@ -36,7 +35,7 @@ async def back_to_admin_menu(message: Message) -> None:
 async def handle_settings_1(message: Message) -> None:
     """Handle user management settings."""
     users = db.get_all_users()
-    user_list = "\n".join([f"ID: {user[0]}, Имя: {user[1]}, Баллы: {user[3]}" for user in users])
+    user_list = "\n".join([f"Имя: {user[0]}, Фамилия: {user[1]}, ID: {user[2]}" for user in users])
     markup = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text='Удалить пользователя')],
@@ -49,19 +48,19 @@ async def handle_settings_1(message: Message) -> None:
 
 
 @admin_router.message(F.text == 'Удалить пользователя')
-async def delete_user_prompt(message: Message) -> None:
+async def delete_user_prompt(message: Message, state: FSMContext) -> None:
     """Prompt admin to enter user ID to delete."""
     await message.answer("Введите ID пользователя, которого хотите удалить:")
-    await admin_router.message.register(process_delete_user, IsAdmin())
+    await state.set_state(states.DeleteUserState.user_id)
 
 
-async def process_delete_user(message: Message) -> None:
+@admin_router.message(states.DeleteUserState.user_id)
+async def process_delete_user(message: Message, state: FSMContext) -> None:
     """Process the deletion of a user by ID."""
     try:
         user_id = int(message.text)
         success = db.delete_user(user_id)
         if success:
-            message.bot.ban_chat_member(chat_id=message.chat.id, user_id=user_id)
             await message.answer(f"Пользователь с ID {user_id} успешно удален.")
         else:
             await message.answer(f"Пользователь с ID {user_id} не найден.")
@@ -69,6 +68,7 @@ async def process_delete_user(message: Message) -> None:
         await message.answer("Пожалуйста, введите корректный числовой ID пользователя.")
     except Exception as e:
         await message.answer(f"Произошла ошибка при удалении пользователя: {e}")
+    await state.clear()
 
 
 
@@ -111,7 +111,7 @@ async def add_quiz_subject_prompt(message: Message, state: FSMContext) -> None:
     await state.set_state(states.NewSubjectState.new_subject)
 
 
-@admin_router.message(IsAdmin())
+
 @admin_router.message(states.NewSubjectState.new_subject)
 async def process_add_quiz_subject(message: Message, state: FSMContext) -> None:
     """Process adding a new quiz subject."""

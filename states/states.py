@@ -25,3 +25,7 @@ class Reg(StatesGroup):
     """States for user registration."""
     name = State()
     last_name = State()
+
+
+class DeleteUserState(StatesGroup):
+    user_id = State()

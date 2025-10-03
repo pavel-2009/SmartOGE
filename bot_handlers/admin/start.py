@@ -1,12 +1,10 @@
 from aiogram import Router, F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.filters import CommandStart, Command, BaseFilter
-
-from middlewares.middlewares import IsAdminMiddleware
+from bot_handlers.admin.settings import admin_settings
 
 
 admin_router = Router()
-admin_router.message.middleware(IsAdminMiddleware())
 
 
 class IsAdmin(BaseFilter):
@@ -54,6 +52,12 @@ async def admin_help(message: Message) -> None:
         "/help - Помощь по командам"
     )
     await message.answer(help_text)
+
+
+@admin_router.message(F.text == '⚙️ Настройки')
+async def admin_settings_entry(message: Message):
+    """Entry point for admin settings from main admin menu."""
+    await admin_settings(message)
 
 
 
